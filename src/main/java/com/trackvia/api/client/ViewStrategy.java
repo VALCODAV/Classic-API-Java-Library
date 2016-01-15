@@ -53,6 +53,13 @@ public class ViewStrategy extends APIStrategy {
 		setViewId(viewId);
 	}
 
+	public ViewStrategy(String accessToken, Long viewId, Integer page, Integer limit) {
+		setAccessToken(accessToken);
+		setViewId(viewId);
+		setPage(page);
+		setLimit(limit);
+	}
+
 	public Long getViewId() {
 		return viewId;
 	}
@@ -75,5 +82,21 @@ public class ViewStrategy extends APIStrategy {
 
 	private void setRows(List<Map> rows) {
 		this.rows = rows;
-	}	
+	}
+
+	public Integer getLimit() {
+		return limit;
+	}
+
+	private void setLimit(Integer limit) {
+		this.limit = limit;
+	}
+
+	public Integer getPage() {
+		return page;
+	}
+
+	private void setPage(Integer page) {
+		this.page = page;
+	}
 }
