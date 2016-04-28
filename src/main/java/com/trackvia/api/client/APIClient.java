@@ -1,11 +1,11 @@
 package com.trackvia.api.client;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
@@ -17,10 +17,13 @@ import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.util.EntityUtils;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class APIClient {
 	
@@ -59,70 +62,83 @@ public class APIClient {
 	}
 	
 	public String execute(APIStrategy strategy, String requestType) {
-		
-		 HttpClient client = WebClientWrapper.wrapClient(new DefaultHttpClient());
-		 String responseBody = new String();
 
-		 try {
-			 	if (requestType.equals("post")) {
-			 		HttpPost httprequest = new HttpPost(strategy.getRequestBuilder(getClientId()).build());
-			 		System.out.println("executing request " + httprequest.getURI());
-			 		if (strategy.getPayload() != null) {
-			 			StringEntity input = new StringEntity(strategy.getPayload());
-			 			input.setContentType("application/json");
-			 			httprequest.setEntity(input);
-			 		}
-			 		// Create a response handler
-			 		ResponseHandler<String> responseHandler = new BasicResponseHandler();
-			 		responseBody = client.execute(httprequest, responseHandler);
-			 	} else if (requestType.equals("put")) {
-		 			HttpPut httprequest = new HttpPut(strategy.getRequestBuilder(getClientId()).build());
-		 			System.out.println("executing request " + httprequest.getURI());
-			 		if (strategy.getPayload() != null) {
-			 			StringEntity input = new StringEntity(strategy.getPayload());
-			 			input.setContentType("application/json");
-			 			httprequest.setEntity(input);
-			 		}		 			
-		 			// Create a response handler
-		 			ResponseHandler<String> responseHandler = new BasicResponseHandler();
-		 			responseBody = client.execute(httprequest, responseHandler);
-		 		} else if (requestType.equals("delete")) {
-	 				HttpDelete httprequest = new HttpDelete(strategy.getRequestBuilder(getClientId()).build());
-	 				System.out.println("executing request " + httprequest.getURI());
-	 				// Create a response handler
-	 				ResponseHandler<String> responseHandler = new BasicResponseHandler();
-	 				responseBody = client.execute(httprequest, responseHandler);
-	 			} else {
-			 		HttpGet httprequest = new HttpGet(strategy.getRequestBuilder(getClientId()).build());
-			 		System.out.println("executing request " + httprequest.getURI());
-			 		// Create a response handler
-			 		ResponseHandler<String> responseHandler = new BasicResponseHandler();
-			 		responseBody = client.execute(httprequest, responseHandler);
-			 	}
+		HttpClient client = WebClientWrapper.wrapClient(new DefaultHttpClient());
+		String responseBody = new String();
+
+		try {
+
+			ResponseHandler<String> anyResponseHandler = new ResponseHandler<String>() {
+				@Override
+				public String handleResponse(HttpResponse response) throws ClientProtocolException, IOException {
+					StatusLine statusLine = response.getStatusLine();
+					HttpEntity entity = response.getEntity();
+
+					String body = entity != null ? EntityUtils.toString(response.getEntity()) : null;
+					if (body == null || body.isEmpty()) {
+						throw new HttpResponseException(statusLine.getStatusCode(), statusLine.getReasonPhrase());
+					}
+					return body;
+				}
+			};
+
+			if (requestType.equals("post")) {
+				HttpPost httprequest = new HttpPost(strategy.getRequestBuilder(getClientId()).build());
+				System.out.println("executing request " + httprequest.getURI());
+				if (strategy.getPayload() != null) {
+					StringEntity input = new StringEntity(strategy.getPayload());
+					input.setContentType("application/json");
+					httprequest.setEntity(input);
+				}
+				// Create a response handler
+				responseBody = client.execute(httprequest, anyResponseHandler);
+			} else if (requestType.equals("put")) {
+				HttpPut httprequest = new HttpPut(strategy.getRequestBuilder(getClientId()).build());
+				System.out.println("executing request " + httprequest.getURI());
+				if (strategy.getPayload() != null) {
+					StringEntity input = new StringEntity(strategy.getPayload());
+					input.setContentType("application/json");
+					httprequest.setEntity(input);
+				}
+				// Create a response handler
+				responseBody = client.execute(httprequest, anyResponseHandler);
+			} else if (requestType.equals("delete")) {
+				HttpDelete httprequest = new HttpDelete(strategy.getRequestBuilder(getClientId()).build());
+				System.out.println("executing request " + httprequest.getURI());
+				// Create a response handler
+				ResponseHandler<String> responseHandler = new BasicResponseHandler();
+				responseBody = client.execute(httprequest, responseHandler);
+			} else {
+				HttpGet httprequest = new HttpGet(strategy.getRequestBuilder(getClientId()).build());
+				System.out.println("executing request " + httprequest.getURI());
+				// Create a response handler
+				ResponseHandler<String> responseHandler = new BasicResponseHandler();
+				responseBody = client.execute(httprequest, responseHandler);
+			}
 
 
-	            System.out.println("----------------------------------------");
-	            System.out.println(responseBody);
-	            System.out.println("----------------------------------------"); 
-	            
-	            strategy.postExecute(responseBody);
+			System.out.println("----------------------------------------");
+			System.out.println(responseBody);
+			System.out.println("----------------------------------------");
 
-	        } catch (ClientProtocolException e) {
-				// TODO Auto-generated catch block
+			strategy.postExecute(responseBody);
+
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
 //				e.printStackTrace();
-	        	responseBody = e.getMessage();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
+			responseBody = e.getMessage();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
 //				e.printStackTrace();
-				responseBody = e.getMessage();
-			} finally {
-	            // When HttpClient instance is no longer needed,
-	            // shut down the connection manager to ensure
-	            // immediate deallocation of all system resources
-	            client.getConnectionManager().shutdown();
-	        }	
-		 
-		 return responseBody;
+			responseBody = e.getMessage();
+		} finally {
+			// When HttpClient instance is no longer needed,
+			// shut down the connection manager to ensure
+			// immediate deallocation of all system resources
+			client.getConnectionManager().shutdown();
+		}
+
+		return responseBody;
 	}
 	
 	public static Map<String, Object> getResponseAsMap(String responseBody)  {
