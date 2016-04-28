@@ -75,7 +75,7 @@ import org.apache.http.impl.client.DefaultHttpClient;
 	            ssf.setHostnameVerifier(verifier);
 	            ClientConnectionManager ccm = base.getConnectionManager();
 	            SchemeRegistry sr = ccm.getSchemeRegistry();
-	            sr.register(new Scheme("https", ssf, 443));
+	            sr.register(new Scheme("https", 443, ssf));
 	            return new DefaultHttpClient(ccm, base.getParams());
 	        } catch (Exception ex) {
 	            ex.printStackTrace();
