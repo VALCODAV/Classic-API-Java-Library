@@ -103,8 +103,13 @@ public class APIClient {
 				// Create a response handler
 				responseBody = client.execute(httprequest, anyResponseHandler);
 			} else if (requestType.equals("delete")) {
-				HttpDelete httprequest = new HttpDelete(strategy.getRequestBuilder(getClientId()).build());
+				HttpDeleteWithBody httprequest = new HttpDeleteWithBody(strategy.getRequestBuilder(getClientId()).build());
 				System.out.println("executing request " + httprequest.getURI());
+				if (strategy.getPayload() != null) {
+					StringEntity input = new StringEntity(strategy.getPayload());
+					input.setContentType("application/json");
+					httprequest.setEntity(input);
+				}
 				// Create a response handler
 				ResponseHandler<String> responseHandler = new BasicResponseHandler();
 				responseBody = client.execute(httprequest, responseHandler);
