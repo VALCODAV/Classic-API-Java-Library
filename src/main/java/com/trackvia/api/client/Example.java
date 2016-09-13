@@ -22,7 +22,7 @@ public class Example {
     private static String PASSWORD;
     private String accessToken = new String();
     
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Example e = new Example();
         e.printApps();
         System.out.println("This works");
@@ -36,7 +36,7 @@ public class Example {
         }
     }
     
-    private void printApps() {
+    private void printApps() throws IOException {
         APIClient client = new APIClient(CLIENT_ID);
 		APIStrategy strategy = new LoginStrategy(USERNAME, PASSWORD, CLIENT_SECRET); 
 		client.execute( strategy, "get" );
